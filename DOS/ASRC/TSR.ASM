@@ -11,8 +11,8 @@ PAGE 66,80 ; 66 lines per page, 80 characters/line
 int_bios_keypress			EQU 09h
 
 int_video						EQU	10h
+	svc_video_get_mode			EQU 0Fh
 	svc_video_write_char_tty	EQU	0Eh
-	tty_page						EQU 00h
 
 int_dos_21					EQU	21h
 	svc_dos_print_string	EQU 09h
@@ -42,11 +42,15 @@ ENDM
 UTIL_PRINT_NEWLINE MACRO
 	;; Print \r\n
 	push	bx
+	; get page into bh
+	mov		ah,svc_video_get_mode
+	int		int_video
 	mov		ax,(svc_video_write_char_tty SHL 8) OR 0Dh
-	mov		bh,tty_page
+	int		int_video
+	; get page
+	mov		ah,svc_video_get_mode
 	int		int_video
 	mov		ax,(svc_video_write_char_tty SHL 8) OR 0Ah;
-	mov		bh,tty_page
 	int		int_video
 	pop		bx
 ENDM
@@ -73,8 +77,12 @@ UTIL_PRINT_HEX_NIBBLES_LOOP:
 	jle		UTIL_PRINT_HEX_NIBBLES_CONT
 	add		al,'A'-'9'-1 ; If not, shift up to ASCII 'A' range
 UTIL_PRINT_HEX_NIBBLES_CONT:
+	push	ax ; save character
+	; Get current video PAGE, sets bh
+	mov		ah,svc_video_get_mode
+	int		int_video
+	pop		ax ; restore character
 	mov		ah,svc_video_write_char_tty ; Select DOS Print TTY service
-	mov		bh,tty_page
 	int		int_video ; Print current character
 	pop		ax ; Restore Nth rotated AX
 	loop	UTIL_PRINT_HEX_NIBBLES_LOOP
@@ -86,16 +94,23 @@ TSR_MAIN:
 	push	ax
 	cmp		al,1 ; check if ESC was hit
 	jne		CALL_ORIG ; bail if not
-	push	ds
-	push	dx
-	mov		ax,ss
+	push	cx
+	push	bp
+	UTIL_PRINT_NEWLINE ; Print newline
+	mov		bp,sp ; set base pointer
+	add		bp,6 ; get past the pushed BP,CX,AX
+	mov		cx,16
+TSR_LOOP:
+	mov		ax,[bp]
+	push	bp
 	UTIL_PRINT_WORD
 	UTIL_PRINT_NEWLINE
-	mov		ax,sp
-	UTIL_PRINT_WORD
-	UTIL_PRINT_NEWLINE
-	pop		dx
-	pop		ds
+	pop		bp
+	inc		bp
+	inc		bp
+	loop	TSR_LOOP
+	pop		bp
+	pop		cx
 CALL_ORIG:
 	pop		ax
 	jmp DWORD PTR cs:[old_int9_offset]
