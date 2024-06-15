@@ -107,8 +107,8 @@ TSR_DONE:
 TSR_DUMP_STACK:
 	push	cx
 	push	bp
-	
 	UTIL_PRINT_NEWLINE ; Print newline
+	
 	mov		ax,ss ; Print stack Segment
 	UTIL_PRINT_WORD
 	UTIL_PRINT_COLON
@@ -121,11 +121,11 @@ TSR_DUMP_STACK:
 	add		bp,6 ; get past the pushed BP,CX,AX (6 bytes)
 	mov		cx,16 ; look at 16 bytes of the stack
 TSR_LOOP:
-	mov		ax,[bp]
-	push	bp
+	mov		ax,[bp] ; get the value at the current base pointer
+	push	bp ; save off base pointer
 	UTIL_PRINT_WORD
 	UTIL_PRINT_NEWLINE
-	pop		bp
+	pop		bp ; restore base pointer
 	add		bp,2 ; move to next word
 	loop	TSR_LOOP
 	pop		bp
