@@ -39,16 +39,23 @@ UTIL_PRINT_WORD MACRO
 	call 	UTIL_PRINT_HEX_NIBBLES
 	pop		cx
 ENDM
+UTIL_PRINT_COLON MACRO
+	;; Print :
+	push	bx
+	mov		ah,svc_video_get_mode 	; get page into bh
+	int		int_video
+	mov		ax,(svc_video_write_char_tty SHL 8) OR ":"
+	int		int_video
+	pop		bx
+ENDM
 UTIL_PRINT_NEWLINE MACRO
 	;; Print \r\n
 	push	bx
-	; get page into bh
-	mov		ah,svc_video_get_mode
+	mov		ah,svc_video_get_mode 	; get page into bh
 	int		int_video
 	mov		ax,(svc_video_write_char_tty SHL 8) OR 0Dh
 	int		int_video
-	; get page
-	mov		ah,svc_video_get_mode
+	mov		ah,svc_video_get_mode 	; get page into bh
 	int		int_video
 	mov		ax,(svc_video_write_char_tty SHL 8) OR 0Ah;
 	int		int_video
@@ -71,15 +78,14 @@ UTIL_PRINT_HEX_NIBBLES_LOOP:
 	rol		ax,1 ;
 	rol		ax,1 ; 
 	push	ax ; Save off the Nth rotated AX
-	and		al,00Fh ; Isolate the nibble
+	and		al,0Fh ; Isolate the nibble
 	add		al,'0' ; Shift into the ASCII Numeric Range
 	cmp		al,'9' ; Check if <= 9
 	jle		UTIL_PRINT_HEX_NIBBLES_CONT
 	add		al,'A'-'9'-1 ; If not, shift up to ASCII 'A' range
 UTIL_PRINT_HEX_NIBBLES_CONT:
 	push	ax ; save character
-	; Get current video PAGE, sets bh
-	mov		ah,svc_video_get_mode
+	mov		ah,svc_video_get_mode 	; Get current video PAGE, sets bh
 	int		int_video
 	pop		ax ; restore character
 	mov		ah,svc_video_write_char_tty ; Select DOS Print TTY service
@@ -93,27 +99,39 @@ UTIL_PRINT_HEX_NIBBLES ENDP
 TSR_MAIN:
 	push	ax
 	cmp		al,1 ; check if ESC was hit
-	jne		CALL_ORIG ; bail if not
+	je		TSR_DUMP_STACK ; if yes, process
+TSR_DONE:
+	pop		ax
+	jmp DWORD PTR cs:[old_int9_offset]
+	
+TSR_DUMP_STACK:
 	push	cx
 	push	bp
+	
+	UTIL_PRINT_NEWLINE ; Print newline
+	mov		ax,ss ; Print stack Segment
+	UTIL_PRINT_WORD
+	UTIL_PRINT_COLON
+	mov		ax,sp ; Print stack pointer
+	UTIL_PRINT_WORD
+	UTIL_PRINT_NEWLINE
+	
 	UTIL_PRINT_NEWLINE ; Print newline
 	mov		bp,sp ; set base pointer
-	add		bp,6 ; get past the pushed BP,CX,AX
-	mov		cx,16
+	add		bp,6 ; get past the pushed BP,CX,AX (6 bytes)
+	mov		cx,16 ; look at 16 bytes of the stack
 TSR_LOOP:
 	mov		ax,[bp]
 	push	bp
 	UTIL_PRINT_WORD
 	UTIL_PRINT_NEWLINE
 	pop		bp
-	inc		bp
-	inc		bp
+	add		bp,2 ; move to next word
 	loop	TSR_LOOP
 	pop		bp
 	pop		cx
-CALL_ORIG:
-	pop		ax
-	jmp DWORD PTR cs:[old_int9_offset]
+	jmp		TSR_DONE
+
 old_int9_offset dw ?
 old_int9_segment dw ?
 ENDOFTSR:
