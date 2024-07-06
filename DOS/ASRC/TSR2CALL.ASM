@@ -1,7 +1,7 @@
-TITLE TSR1CALL Program
+TITLE TSR2CALL Program
 PAGE 66,80 ; 66 lines per page, 80 characters/line
 
-;; This invokes the TSR loaded by TSR1 and then exits
+;; This invokes the TSR loaded by TSR2 and then exits
 
 %OUT Processing EQUATES...
 int_video						EQU	10h

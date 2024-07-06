@@ -1,7 +1,7 @@
-TITLE TSR1LOAD Program
+TITLE TSR2LOAD Program
 PAGE 66,80 ; 66 lines per page, 80 characters/line
 
-;; This loads or unloads TSR1
+;; This loads or unloads TSR2
 
 %OUT Processing EQUATES...
 interrupt_vector_table_segment		EQU 0000h
