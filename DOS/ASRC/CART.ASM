@@ -10,7 +10,7 @@ PAGE 66,80 ; 66 lines per page, 80 characters/line
 CODESEG SEGMENT
 	assume CS:CODESEG, DS:CODESEG, SS:CODESEG
 	
-ROM EQU 0 ; Set to 0 if COM
+ROM EQU 0 ; Set to 0 if COM, Set to 1 if ROM
 		
 IF ROM 	;; Cartride Header
 	ORG 0
