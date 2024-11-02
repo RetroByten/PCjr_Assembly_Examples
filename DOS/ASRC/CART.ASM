@@ -50,14 +50,12 @@ MAIN ENDP
 ;	int		21h ; DOS Interrupt
 ;ALT ENDP
 
-IF ROM
-	; Align CARTCRC to end of a 512 byte boundary
-	; If end of next word (+2) is not on a 512 byte boundary
-	IF ($-PROGRAM+2) MOD 512 ; if this != 0
+IF ROM 	; Align CARTCRC to end of a 512 byte boundary
+	IF ($-PROGRAM+2) MOD 512 ; If end of next word (+2) is not on a 512 byte boundary
 		ORG ($-PROGRAM+2)+512-(($-PROGRAM+2) MOD 512) - 2 ; Round up, minus 2
 	ENDIF
 	CARTCRC dw 0000h ; Placeholder for cartridge CRC
-	ENDIF
+ENDIF
 ENDLOC EQU $ ; Used for CARTSIZ calculation
 
 CODESEG ENDS
