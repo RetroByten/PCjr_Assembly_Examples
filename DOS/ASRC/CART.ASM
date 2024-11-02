@@ -12,7 +12,7 @@ CODESEG SEGMENT
 	
 ROM EQU 0 ; Set to 0 if COM, Set to 1 if ROM
 		
-IF ROM 	;; Cartride Header
+IF ROM 	;; Cartridge Header
 	ORG 0
 	PROGRAM:
 	CARTSIG		dw 0AA55h					; Cartridge Signature
@@ -26,7 +26,7 @@ IF ROM 	;; Cartride Header
 	;DOSCMD2S	db "ALT"					; DOS Command2 name string
 	;DOSCMD2E:								; End of Command2 name string
 	;jmp		ALT							; DOS Command2 Entry Point
-	CARTEOH		db 00h						; End of header
+	CARTEOH		db 00h						; End of cartridge header
 ELSE 	;; DOS COM Entry
 	ORG	100h
 	PROGRAM:
