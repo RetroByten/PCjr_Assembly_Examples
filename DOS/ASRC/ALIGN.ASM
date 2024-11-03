@@ -1,17 +1,27 @@
-TITLE CART Template Program
+TITLE ALIGNMENT Program
 PAGE 66,80 ; 66 lines per page, 80 characters/line
 
-;; Template for a DOS program that can either
-; Run from cartridge or run from DOS
+;; This program shows calculations for aligning to 512K chunk or PAGE
+; + an offset for an end of file marker
 
 ; NOTE1: CRC needs to be calculated externally
-; NOTE2: Does not add JRC header for emulators
 
 ROM EQU 0 ; Set to 0 if COM, Set to 1 if ROM
 
+int_dos_21					EQU	21h
+	svc_dos_print_chr_02		EQU 02h
+	svc_dos_print_string_09		EQU 09h
+	svc_dos_keep_resident_31	EQU 31h 
+	svc_dos_terminate_4c			EQU 4Ch
+		val_dos_terminate_0			EQU 00h
+	svc_dos_allocate_48			EQU 48h
+	svc_dos_deallocate_48		EQU 49h
+	svc_dos_setblock_4a			EQU 4Ah
+
+
 CODESEG SEGMENT
 	assume CS:CODESEG, DS:CODESEG, SS:CODESEG
-BEGIN = $	; Mark 0000h for calculations
+BEGIN = $
 IF ROM 	;; Cartridge Header
 	ORG 0
 	PROGRAM:
@@ -22,10 +32,6 @@ IF ROM 	;; Cartridge Header
 	DOSCMD1S	db "MAIN"					; DOS Command1 name string
 	DOSCMD1E:								; End of Command1 name string
 	jmp			NEAR PTR MAIN				; DOS Command1 Entry Point
-	;DOSCMD2L	db DOSCMD2E - DOSCMD2S		; Length of DOS Command2 name
-	;DOSCMD2S	db "ALT"					; DOS Command2 name string
-	;DOSCMD2E:								; End of Command2 name string
-	;jmp		NEAR PTR ALT				; DOS Command2 Entry Point
 	CARTEOH		db 00h						; End of cartridge header
 ELSE 	;; DOS COM Entry
 	ORG	100h
@@ -39,16 +45,9 @@ INIT PROC FAR 	; BIOS enters
 INIT ENDP
 
 MAIN PROC FAR
-	;; Insert DOS MAIN code here
-	mov		ax,4C00h ; DOS Service 4Ch (Terminate), exit code 0
-	int		21h ; DOS Interrupt
+	mov		ax,(svc_dos_terminate_4c SHL 8) OR val_dos_terminate_0 ; DOS Service 4Ch (Terminate), exit code 0
+	int		int_dos_21 ; DOS Interrupt
 MAIN ENDP
-
-;ALT PROC FAR
-	;; Insert DOS ALT code here
-;	mov		ax,4C00h ; DOS Service 4Ch (Terminate), exit code 0
-;	int		21h ; DOS Interrupt
-;ALT ENDP
 
 db "0123456789ABCDEF" ; Helps with debugging alignment
 IF ROM 	; Align CARTCRC to end of a 512 byte boundary
