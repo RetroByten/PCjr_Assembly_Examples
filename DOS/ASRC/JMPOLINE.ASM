@@ -81,8 +81,8 @@ ENDIF
 	jmp		FAR PTR PLACEHOLDER_JMP ; Placeholder for jump target
 	orig_int60_offset dw ?
 	orig_int60_segment dw ?
-	IF ($-DATASEGSTART) MOD 16
-		ORG ($-DATASEGSTART)+16-(($-DATASEGSTART) MOD 16) + 100h; offset from start
+	IF ($-BEGINOFPROG) MOD 16
+		ORG ($-BEGINOFPROG)+16-(($-BEGINOFPROG) MOD 16)
 	ENDIF
 DATASEGEND:
 ;;;;;;; END DATA VARS
