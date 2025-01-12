@@ -1,8 +1,10 @@
 TITLE INTSTACK Program
 PAGE 66,80 ; 66 lines per page, 80 characters/line
 
-;; This program is an example of an Interrupt
-;; creating its own stack and then restoring it
+;; This program is showing an example of how an INT
+;; might safely swap to its own internal stack when servicing
+;; a hardware IRQ
+;; It is not meant to be a fully functional program!
 
 int_dos_21 EQU 21h
 	svc_dos_set_interrupt_25 EQU 25h
