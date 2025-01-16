@@ -25,7 +25,7 @@ int_dos_21 EQU 21h
 		
 port_nmi_mask_reg			EQU 0A0h ; 
 ;	nmi_bit					EQU 10000000B ; Enable NMI BIT
-	nmi_enable				EQU 10000000B ; Bit 7 = NMI, 0 = on
+	nmi_enable				EQU 10000000B ; Bit 7 = NMI, 1 = on
 	nmi_disable				EQU 00000000B ; Bit 7 = NMI, 0 = off
 
 	
