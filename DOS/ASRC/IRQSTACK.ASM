@@ -6,19 +6,25 @@ PAGE 66,80 ; 66 lines per page, 80 characters/line
 ;; a hardware IRQ
 ;; It is not meant to be a fully functional program!
 
+;; Update - NMI disabling did not work the way I thought it did (see NMIOFF.ASM)
+
 int_dos_21 EQU 21h
 	svc_dos_set_interrupt_25 EQU 25h
 	svc_dos_terminate_4C EQU 4Ch
 		val_dos_terminate_00 EQU 00h
 		
 port_nmi_mask_reg			EQU 0A0h ; 
-	nmi_bit					EQU 10000000B ; Enable NMI BIT
+;	nmi_bit					EQU 10000000B ; Enable NMI BIT
+	nmi_enable				EQU 10000000B ; Bit 7 = NMI
+	nmi_disable				EQU 00000000B ; Bit 7 = NMI
+
 port_pic_cmd				EQU 20h ; 8259A PIC Command port
 	val_pic_eoi					EQU 20h ; 8259A PIC "End of Interrupt" value
 
 CODESEG SEGMENT
 	assume CS:CODESEG, DS:CODESEG, SS:CODESEG
 ORG	100h
+PROGRAM:
 	jmp			NEAR PTR MAIN				; DOS Command Entry Point
 
 ;; Note - In general, IRQs ideally would not need their own stack
@@ -58,6 +64,8 @@ IRQ_PROC PROC FAR ;;	Pushes 6 bytes to pre-existing stack
 	;; Note: IRQ Interrupts disabled as we entered the interrupt
 	;; 		 Except keyboard NMI!
 	
+	sti ; Re-enable interrupts
+	
 	;; 1.) Preserve caller's AX on pre-existing stack
 	push	ax ;; Pushes 2 more bytes onto pre-existing stack
 	
@@ -70,64 +78,66 @@ IRQ_PROC PROC FAR ;;	Pushes 6 bytes to pre-existing stack
 	mov		bp,sp ; Save existing stack pointer
 
 	;; 4.) Disable NMI (to protect Stack swap)
-	in		al,port_nmi_mask_reg
-	and		al,NOT nmi_bit
+	;in		al,port_nmi_mask_reg
+	;and		al,NOT nmi_bit
+	mov		al,nmi_disable
 	out		port_nmi_mask_reg,al
 	
 	;; 5.) Setup new stack to CS:INT_STACK_END
 	mov		ax,cs ; Get our segment - assumes code and stack in RAM
+	cli ; Disable interrupts
 	mov		ss,ax ; Set interrupt stack segment to CS
 	mov		sp,offset INT_STACK_END	; Set interrupt stack pointer
+	sti ; Enable interrupts
+	
 	
 	;; 6.) Re-enable NMI
-	in		al,port_nmi_mask_reg
-	or		al,nmi_bit
+	;in		al,port_nmi_mask_reg
+	;or		al,nmi_bit
+	mov		al,nmi_enable
 	out		port_nmi_mask_reg,al
+	in		al,port_nmi_mask_reg ; Clear any latched data
 	
-	;; 7.) Re-enable interrupts (were disabled when IRQ was called)
-	sti
-	
-	; 8.) Preserve all registers used except AX to new stack
+	; 7.) Preserve all registers used except AX to new stack
 	push	bp ; Example pushed to new stack
 	; More registers, etc.
 
-	;; 9a.)	---	Do interrupt things, Ensure card side of IRQ line is reset
+	;; 8a.)	---	Do interrupt things, Ensure card side of IRQ line is reset
 	;; 		--- Insert Code Here
-	;; 9b.)	--- Done doing interrupt things, card side of IRQ line is reset
+	;; 8b.)	--- Done doing interrupt things, card side of IRQ line is reset
 	
-	;; 10.) Restore registers used except AX from new stack
+	;; 9.) Restore registers used except AX from new stack
 	; More registers, etc.
 	pop		bp ; Example restored from new stack
 	 
-	;; 11.) Disable interrupts
-	cli
-
-	;; 12.) Disable NMI
-	in		al,port_nmi_mask_reg
-	and		al,NOT nmi_bit
+	;; 10.) Disable NMI
+	;in		al,port_nmi_mask_reg
+	;and		al,NOT nmi_bit
+	mov		al,nmi_disable
 	out		port_nmi_mask_reg,al
 	
-	;; 13.) Restore pre-existing stack (DX:BP)
+	;; 11.) Restore pre-existing stack (DX:BP)
+	cli ; Disable interrupts
 	mov		ss,dx
 	mov		sp,bp
+	sti ; Enable interrupts
 	
-	;; 14.) Re-Enable NMI
-	in		al,port_nmi_mask_reg
-	or		al,nmi_bit
+	;; 12.) Re-Enable NMI
+	;in		al,port_nmi_mask_reg
+	;or		al,nmi_bit
+	mov		al,nmi_enable
 	out		port_nmi_mask_reg,al
+	in		al,port_nmi_mask_reg ; Clear any latched NMI
 	
-	;; 15.) Re-enable interrupts
-	sti
-
-	; 16.) Restore original BP and DX from pre-existing stack
+	; 13.) Restore original BP and DX from pre-existing stack
 	pop		bp
 	pop		dx
 	
-	;; 17.) Acknowledge the PIC interrupt
+	;; 14.) Acknowledge the PIC interrupt
 	mov		al,val_pic_eoi	; If done with a hardware interrupt, have to ACK
 	out		port_pic_cmd,al ; Ack hardware Interrupt
 	
-	;; 18.) Restore original AX from pre-existing stack
+	;; 15.) Restore original AX from pre-existing stack
 	pop		ax
 	iret
 IRQ_PROC  ENDP	
