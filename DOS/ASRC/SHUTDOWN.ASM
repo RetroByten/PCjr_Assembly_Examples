@@ -29,12 +29,13 @@ BEGIN = $
 	mov		ax,(svc_set_video_mode SHL 8) OR val_160x200_16_graphics
 	int		int_bios_video_10h
 	
-	; 2.) Get video mode to get active 
+	; 2.) Get video mode to get active page
 	mov		ah,svc_get_video_mode
 	int		int_bios_video_10h
 	mov		active_page,bh ; store active page
 
-	; 3.) Set Cursor position to 11,0 (BH is already active page)
+	; 3.) Set Cursor position to 11,0
+	mov		bh,active_page
 	mov		dh,11 ; decimal
 	mov		dl,0  ; decimal
 	mov		ah,svc_set_cursor_pos
